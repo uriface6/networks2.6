@@ -1,3 +1,4 @@
+import os.path
 #   Ex. 2.7 template - protocol
 
 
@@ -13,23 +14,46 @@ def check_cmd(data):
 
     # (3)
     cmd_flag = False
-    data_list = data.split()
+    data_list = data.split(" ", 1)
+    param = []
 
     command = data_list[0].lower()
+    print("check_command: " + command + " len: " + str(len(data_list)))
     if command == "dir" and len(data_list) == 2:
-        cmd_flag = True
+        if os.path.exists(data_list[1]):
+            cmd_flag = True
+            param.append(data_list[1])
+        else:
+            print("dir error!!!")
     elif command == "delete" and len(data_list) == 2:
-        cmd_flag = True
-    elif command == "copy" and len(data_list) == 3:
-        cmd_flag = True
+        if os.path.isfile(data_list[1]):
+            cmd_flag = True
+            param.append(data_list[1])
+        else:
+            print("delete error!!!")
+    elif command == "copy" and len(data_list) == 2:
+        data_list = data.split(" ")
+        if len(data_list) == 3 and os.path.isfile(data_list[1]): #and os.path.isfile(data_list[2])
+            cmd_flag = True
+            param.append(data_list[1])
+            param.append(data_list[2])
     elif command == "execute" and len(data_list) == 2:
+        print("im executing!!!")
+        if os.path.isfile(data_list[1]):
+            cmd_flag = True
+            param.append(data_list[1])
+        else:
+            print("execute error!!!")
+    elif command == "take_screenshot" and len(data_list) == 1:
         cmd_flag = True
-    elif command == "take_screenshot":
+    elif command == "send_photo" and len(data_list) == 1:
+        cmd_flag = True
+    elif command == "exit" and len(data_list) == 1:
         cmd_flag = True
     else:
         cmd_flag = False
 
-    return cmd_flag
+    return cmd_flag, command, param
 
 
 def create_msg(data):
@@ -57,10 +81,18 @@ def get_msg(my_socket):
         msg_flg = True
     except:
         print("len of data error!!")
-        msg = "Erorr"
+        msg = "Error"
         my_socket.recv(1024)
         msg_flg = False
 
     return msg_flg, msg
 
+"""
+def get_dir_from_file_path(file_path):
+    path_list = file_path.split(r"\\\\")
+    dir_path = ""
+    for path in path_list[0:-2]:
+        dir_path += path
 
+    return dir_path
+"""

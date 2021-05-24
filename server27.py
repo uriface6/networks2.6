@@ -4,6 +4,11 @@
 
 import socket
 import protocol27 as protocol
+import glob
+import os
+import shutil
+import subprocess
+import pyautogui
 
 
 IP = '0.0.0.0'
@@ -24,10 +29,10 @@ def check_client_request(cmd):
         params: List of the cmd params (ex. ["c:\\cyber"])
     """
     # Use protocol.check_cmd first
-
     # Then make sure the params are valid
-
     # (6)
+
+    ## use in check_cmd function in protocol27
 
     return True, "DIR", ["c:\\cyber"]
 
@@ -40,13 +45,61 @@ def handle_client_request(command, params):
 
     Returns:
         response: the requested data
-
     """
-
     # (7)
+    print("server command: " + command)
 
-    response = 'OK'
-    return response
+    if command == "dir":
+        try:
+            reply = ', '.join(glob.glob(params[0] + r'\\*.*'))
+        except:
+            reply = "dir error!"
+
+    elif command == "delete":
+        try:
+            os.remove(params[0])
+            reply = "delete successes"
+        except:
+            reply = "delete error!"
+
+    elif command == "copy":
+        try:
+            shutil.copy(params[0], params[1])
+            reply = "copy successes"
+        except:
+            reply = "copy error!!!"
+
+    elif command == "execute":
+        try:
+            subprocess.call(params[0])
+            reply = "execute successes"
+        except:
+            reply = "execute error"
+
+    elif command == "take_screenshot":
+        try:
+            image = pyautogui.screenshot()
+            image.save(r'C:\\networks\\works\\screen.jpg')
+            reply = "screenshot successes"
+        except:
+            reply = "screenshot error!!!"
+
+    elif command == "send_photo":
+        try:
+            file = open(r'C:\\networks\\works\\screen.jpg', mode='rb')  # b is important -> binary
+            file_content = file.read()
+            reply = str(len(file_content))
+            print("file len: " + reply)
+            file.close()
+        except:
+            reply = "send_photo error"
+
+    elif command == "exit":
+        reply = "goodBye"
+    else:
+        reply = "command error"
+
+    return reply
 
 
 def main():
@@ -64,36 +117,52 @@ def main():
     while True:
         # Check if protocol is OK, e.g. length field OK
         valid_protocol, cmd = protocol.get_msg(client_socket)
+        print("cmd: " + cmd)
         if valid_protocol:
             # Check if params are good, e.g. correct number of params, file name exists
-            valid_cmd, command, params = check_client_request(cmd)
+            valid_cmd, command, params = protocol.check_cmd(cmd)
+            print("command: " + command)
             if valid_cmd:
 
                 # (6)
 
                 # prepare a response using "handle_client_request"
-
                 # add length field using "create_msg"
-
                 # send to client
+                reply = handle_client_request(command, params)
+                reply = protocol.create_msg(reply)
+                client_socket.send(reply)
+                print("server sent: " + reply.decode())
 
-                if command == 'SEND_FILE':
+                if command == 'send_photo':
                     # Send the data itself to the client
+                    # (9)!!!!!
 
-                    # (9)
-                
-                if command == 'EXIT':
+                    try:
+                        file = open(r'C:\\networks\\works\\screen.jpg', mode='rb')  # b is important -> binary
+                        file_content = file.read()
+                        print("!!!!!!!!!!!!!!!!")
+                        print("file size: " + str(len(file_content)))
+                        client_socket.send(file_content)
+                        file.close
+                    except:
+                        print("send photo error")
+
+                if command == 'exit':
                     break
             else:
                 # prepare proper error to client
-                response = 'Bad command or parameters'
+                reply = 'Bad command or parameters'
                 # send to client
+                reply = protocol.create_msg(reply)
+                client_socket.send(reply)
 
         else:
             # prepare proper error to client
-            response = 'Packet not according to protocol'
+            reply = 'Packet not according to protocol'
             #send to client
-
+            reply = protocol.create_msg(reply)
+            client_socket.send(reply)
             # Attempt to clean garbage from socket
             client_socket.recv(1024)
 

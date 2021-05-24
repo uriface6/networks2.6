@@ -20,7 +20,27 @@ def handle_server_response(my_socket, cmd):
     # (8) treat all responses except SEND_PHOTO
 
     # (10) treat SEND_PHOTO
+    if cmd == "send_photo":
+        #need to add
+        flag, msg = protocol.get_msg(my_socket)
+        if msg == "send_photo error":
+            print(msg)
+        else:
+            try:
+                file_size = int(msg)
+                print(file_size)
+                read_file = my_socket.recv(file_size)
+                write_file = open(r'C:\\networks\\works\\client_screen.jpg', mode='wb')  # b is important -> binary
+                write_file.write(bytearray(read_file))
+                write_file.close()
 
+            except:
+                print("error to open file")
+                my_socket.recv(1024)
+
+    else:
+        flag, msg = protocol.get_msg(my_socket)
+        print(msg)
 
 def main():
     # open socket with the server
@@ -35,11 +55,12 @@ def main():
     # loop until user requested to exit
     while True:
         cmd = input("Please enter command:\n")
-        if protocol_solution.check_cmd(cmd):
-            packet = protocol_solution.create_msg(cmd)
+        if protocol.check_cmd(cmd):
+            packet = protocol.create_msg(cmd)
             my_socket.send(packet)
+            print("client send: " + packet.decode())
             handle_server_response(my_socket, cmd)
-            if cmd == 'EXIT':
+            if cmd == 'exit':
                 break
         else:
             print("Not a valid command, or missing parameters\n")
